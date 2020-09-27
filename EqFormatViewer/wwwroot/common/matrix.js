@@ -71,9 +71,6 @@ Matrix44.identity = new Matrix44()
 
 Matrix44.createLookAt = (cameraPosition, cameraTarget, cameraUp) => {
 	const zAxis = cameraPosition.sub(cameraTarget).normalized
-	console.log(cameraUp.cross(zAxis))
-	console.log(cameraUp)
-	console.log(zAxis)
 	const xAxis = cameraUp.cross(zAxis).normalized
 	const yAxis = zAxis.cross(xAxis)
 	

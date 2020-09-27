@@ -75,10 +75,6 @@ export class Vector3 {
 
 	get normalized() {
 		let len = this.lengthSquared
-		console.log('NORMALIZING THIS!!!')
-		console.log(len)
-		console.log(this)
-		console.log('NORMALIZING THIS')
 		if(len === 0) return Vector3.zero
 		if(len === 1) return this
 		return this.div(Math.sqrt(len))
