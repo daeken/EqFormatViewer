@@ -1,7 +1,7 @@
 import {Vector2} from '../common/vector.js'
 
 export class Window {
-	constructor(title='') {
+	constructor(title='', id=null) {
 		this.updaters = []
 		this.element = document.createElement('div')
 		this.element.classList.add('ui-window')
@@ -11,22 +11,29 @@ export class Window {
 		titlebar.innerText = title
 		this.element.appendChild(titlebar)
 		
+		const storageKey = title == '' ? (id == null ? null : id + '-window-pos') : title
+		if(storageKey) {
+			const xpos = localStorage.getItem(storageKey)
+			if(xpos) {
+				const [x, y] = xpos.split('-')
+				this.element.style['margin-left'] = `${Math.min(window.innerWidth - 10, parseInt(x))}px`
+				this.element.style['margin-top'] = `${Math.min(window.innerHeight - 10, parseInt(y))}px`
+			}
+		}
+		
 		let dragging
-		titlebar.addEventListener('mousedown', e => {
-			//const pos = this.element.getBoundingClientRect()
-			dragging = new Vector2(e.clientX, e.clientY)
-			console.log(dragging)
-		})
+		titlebar.addEventListener('mousedown', e => dragging = new Vector2(e.clientX, e.clientY))
 		window.addEventListener('mouseup', e => dragging = undefined)
 		window.addEventListener('mousemove', e => {
 			if(dragging === undefined) return
 			const np = new Vector2(e.clientX, e.clientY)
 			const delta = np.sub(dragging)
 			const parse = x => x === undefined || x == '' ? 0 : parseInt('0' + x)
-			console.log(this.element.style['margin-left'])
 			const set = (side, change) => this.element.style[side] = `${parse(this.element.style[side]) + change}px`
 			set('margin-left', delta.x)
 			set('margin-top', delta.y)
+			if(storageKey)
+				localStorage.setItem(storageKey, `${parse(this.element.style['margin-left'])}-${parse(this.element.style['margin-top'])}`)
 			dragging = np
 		})
 		document.body.addEventListener('mouseleave', () => dragging = undefined)
