@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+    <head>
+        <title>EqFormatViewer</title>
+        <style>
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden;
+            }
+            #cvs {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100%;
+                height: 100%;
+                z-index: -1;
+            }
+            #ui {
+                margin: 0 !important;
+                padding: 0 !important;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 100;
+            }
+
+            .ui-window {
+                border: 1px solid white;
+                background-color: #00000030;
+                color: white;
+                display: inline-block;
+                position: relative;
+            }
+            
+            .ui-window:hover {
+                background-color: #000000a0;
+            }
+            
+            .ui-window-titlebar {
+                border-bottom: 1px solid white;
+                padding: 10px;
+                font-weight: bold;
+                font-size: 20pt;
+                user-select: none;
+            }
+            
+            .ui-window-body {
+                padding: 10px;
+            }
+            
+            .select-block {
+                display: block;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="cvs"></canvas>
+        <div id="ui"></div>
+        <script type="module">import '/main.js';</script>
+    </body>
+</html>
