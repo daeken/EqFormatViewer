@@ -24,6 +24,7 @@
                 width: 100%;
                 height: 100%;
                 z-index: 100;
+                pointer-events: none;
             }
 
             .ui-window {
@@ -32,6 +33,7 @@
                 color: white;
                 display: inline-block;
                 position: relative;
+                pointer-events: all;
             }
             
             .ui-window:hover {
@@ -55,7 +57,7 @@
             }
         </style>
     </head>
-    <body>
+    <body tabindex="-1">
         <canvas id="cvs"></canvas>
         <div id="ui"></div>
         <script type="module">import '/main.js';</script>

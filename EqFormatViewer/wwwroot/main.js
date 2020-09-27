@@ -55,6 +55,7 @@ async function main() {
 			return
 		}
 		const select = document.createElement('select')
+		select.tabIndex = -1
 		select.classList.add('select-block')
 		const bopt = document.createElement('option')
 		bopt.innerText = '---'
@@ -85,7 +86,6 @@ async function main() {
 				if(loader)
 					chosenAsset = loader(asset, name, chosen)
 			}
-			console.log(chosenAsset)
 			if(chosenAsset) pushAsset(chosenAsset)
 		})
 	}

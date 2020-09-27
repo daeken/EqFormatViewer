@@ -97,3 +97,17 @@ Matrix44.createPerspectiveFieldOfView = (fieldOfView, aspectRatio, nearPlaneDist
 		0, 0, nearPlaneDistance * farPlaneDistance / (nearPlaneDistance - farPlaneDistance), 0
 	)
 }
+
+Matrix44.createFromAxisAngle = (axis, angle) => {
+	const x = axis.x, y = axis.y, z = axis.z
+	const sa = Math.sin(angle), ca = Math.cos(angle)
+	const xx = x * x, yy = y * y, zz = z * z
+	const xy = x * y, xz = x * z, yz = y * z
+	
+	return new Matrix44(
+		xx + ca * (1 - x), xy - ca * xy + sa * z, xz - ca * xz - sa * y, 0,
+		xy - ca * xy - sa * z, yy + ca * (1.0 - yy), yz - ca * yz + sa * x, 0,
+		xz - ca * xz + sa * y, yz - ca * yz - sa * x, zz + ca * (1.0 - zz), 0, 
+		0, 0, 0, 1
+	)
+}

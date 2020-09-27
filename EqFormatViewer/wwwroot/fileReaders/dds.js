@@ -68,7 +68,6 @@ export class Dds {
 
 		const header = DdsHeader.unpack(buffer)
 		if(header.magic != 0x20534444) throw 'Invalid DDS magic'
-		if(!(header.ddspf.flags & DDPF_FOURCC)) throw 'Unsupported DDS format'
 
 		let blockBytes
 		let isRGBAUncompressed = false
@@ -99,7 +98,7 @@ export class Dds {
 				) {
 					isRGBAUncompressed = true
 					blockBytes = 64
-					this.format = 1023; // RGBAFormat
+					this.format = 6408 // gl.RGBA
 				} else
 					throw 'Unsupported fourCC in DDS'
 		}

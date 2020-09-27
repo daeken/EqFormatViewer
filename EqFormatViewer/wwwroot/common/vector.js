@@ -50,6 +50,13 @@ export class Vector2 {
 	dot(right) {
 		return this.x * right.x + this.y * right.y
 	}
+
+	transform(matrix) {
+		return new Vector2(
+			this.x * matrix._00 + this.y * matrix._10 + matrix._30,
+			this.x * matrix._01 + this.y * matrix._11 + matrix._31
+		)
+	}
 }
 Vector2.zero = new Vector2(0)
 Vector2.one = new Vector2(1)
@@ -119,6 +126,14 @@ export class Vector3 {
 			this.x * right.y - this.y * right.x
 		)
 	}
+
+	transform(matrix) {
+		return new Vector3(
+			this.x * matrix._00 + this.y * matrix._10 + this.z * matrix._20 + matrix._30,
+			this.x * matrix._01 + this.y * matrix._11 + this.z * matrix._21 + matrix._31,
+			this.x * matrix._02 + this.y * matrix._12 + this.z * matrix._22 + matrix._32
+		)
+	}
 }
 Vector3.zero = new Vector3(0)
 Vector3.one = new Vector3(1)
@@ -181,6 +196,15 @@ export class Vector4 {
 
 	dot(right) {
 		return this.x * right.x + this.y * right.y + this.z * right.z + this.w * right.w
+	}
+	
+	transform(matrix) {
+		return new Vector4(
+			this.x * matrix._00 + this.y * matrix._10 + this.z * matrix._20 + this.w * matrix._30,
+			this.x * matrix._01 + this.y * matrix._11 + this.z * matrix._21 + this.w * matrix._31,
+			this.x * matrix._02 + this.y * matrix._12 + this.z * matrix._22 + this.w * matrix._32,
+			this.x * matrix._03 + this.y * matrix._13 + this.z * matrix._23 + this.w * matrix._33
+		)
 	}
 }
 Vector4.zero = new Vector4(0)
