@@ -10,7 +10,7 @@ export class S3DAsset extends Asset {
 	}
 	
 	fetch(name) {
-		return this.s3d[name]
+		return this.s3d[name.toLowerCase()]
 	}
 	
 	get children() {

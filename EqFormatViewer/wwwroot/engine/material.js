@@ -17,7 +17,7 @@ uniform float uFogDensity;
 in vec4 vPosition;
 vec4 applyFog(vec4 color) {
 	float dist = log(vPosition.z);
-	return vec4(mix(color.rgb, uFogColor * mix(0.75 + (color.r + color.g + color.b) / 12., 0.75, smoothstep(log(1000.), log(1050.), dist)), clamp(pow(max(0., dist - log(250.)), 3.), 0., 1.)), color.a);
+	return vec4(mix(color.rgb, uFogColor * mix(0.75 + (color.r + color.g + color.b) / 12., 0.75, smoothstep(log(3000.), log(3050.), dist)), clamp(pow(max(0., dist - log(750.)), 3.), 0., 1.)), color.a);
 }
 		` + this.fragmentShader
 	}

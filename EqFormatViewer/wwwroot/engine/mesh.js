@@ -7,8 +7,8 @@ export class Mesh {
 		this.material = material
 		this.indexCount = indices.length
 		this.vao = new Vao()
-		this.vao.attach(new Buffer(indices, gl.ELEMENT_ARRAY_BUFFER))
-		this.vao.attach(new Buffer(vdata, gl.ARRAY_BUFFER), [0, type.v3], [1, type.v3], [2, type.v2])
+		this.vao.attach(indices instanceof Buffer ? indices : new Buffer(indices, gl.ELEMENT_ARRAY_BUFFER))
+		this.vao.attach(vdata instanceof Buffer ? vdata : new Buffer(vdata, gl.ARRAY_BUFFER), [0, type.v3], [1, type.v3], [2, type.v2])
 	}
 	
 	draw(projView, modelMatrix) {

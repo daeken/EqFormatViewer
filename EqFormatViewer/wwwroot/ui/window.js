@@ -1,5 +1,8 @@
 import {Vector2} from '../common/vector.js'
 
+let lastTouched
+let zIndex = 100
+
 export class Window {
 	constructor(title='', id=null) {
 		this.updaters = []
@@ -16,10 +19,17 @@ export class Window {
 			const xpos = localStorage.getItem(storageKey)
 			if(xpos) {
 				const [x, y] = xpos.split('-')
-				this.element.style['margin-left'] = `${Math.min(window.innerWidth - 10, parseInt(x))}px`
-				this.element.style['margin-top'] = `${Math.min(window.innerHeight - 10, parseInt(y))}px`
+				this.element.style['left'] = `${Math.min(window.innerWidth - 10, parseInt(x))}px`
+				this.element.style['top'] = `${Math.min(window.innerHeight - 10, parseInt(y))}px`
 			}
 		}
+		
+		this.element.addEventListener('mousedown', e => {
+			if(lastTouched != this) {
+				lastTouched = this
+				this.element.style['zIndex'] = (++zIndex).toString()
+			}
+		})
 		
 		let dragging
 		titlebar.addEventListener('mousedown', e => dragging = new Vector2(e.clientX, e.clientY))
@@ -30,10 +40,10 @@ export class Window {
 			const delta = np.sub(dragging)
 			const parse = x => x === undefined || x == '' ? 0 : parseInt('0' + x)
 			const set = (side, change) => this.element.style[side] = `${parse(this.element.style[side]) + change}px`
-			set('margin-left', delta.x)
-			set('margin-top', delta.y)
+			set('left', delta.x)
+			set('top', delta.y)
 			if(storageKey)
-				localStorage.setItem(storageKey, `${parse(this.element.style['margin-left'])}-${parse(this.element.style['margin-top'])}`)
+				localStorage.setItem(storageKey, `${parse(this.element.style['left'])}-${parse(this.element.style['top'])}`)
 			dragging = np
 		})
 		document.body.addEventListener('mouseleave', () => dragging = undefined)
@@ -52,7 +62,7 @@ export class Window {
 		const element = this.bodyContainer.querySelector(selector)
 		if(element != null) {
 			if(cb == null) {
-				this.updaters.push(() => element.innerText = eventOrTextCb(this))
+				this.updaters.push(() => element.textContent = eventOrTextCb(this))
 				if(this.updaters.length == 1)
 					this.update()
 			} else

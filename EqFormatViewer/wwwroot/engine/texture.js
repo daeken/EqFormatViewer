@@ -8,8 +8,8 @@ export class Texture {
 		const filter = transparent ? gl.LINEAR : gl.LINEAR_MIPMAP_LINEAR
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+		//gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+		//gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 		for(let i = 0; i < layers.length; ++i)
 			if(format == gl.RGBA || format == gl.RGB)
 				gl.texImage2D(gl.TEXTURE_2D, i, format, layers[i].width, layers[i].height, 0, format, gl.UNSIGNED_BYTE, layers[i].data)

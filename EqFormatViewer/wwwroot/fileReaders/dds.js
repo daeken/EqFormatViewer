@@ -66,11 +66,36 @@ export class Dds {
 			return byteArray
 		}
 
+		function loadRGBMip(buffer, dataOffset, width, height) {
+			const dataLength = width * height * 3
+			const srcBuffer = new Uint8Array(buffer, dataOffset, dataLength)
+			const byteArray = new Uint8Array(dataLength)
+			let dst = 0
+			let src = 0
+			for(let y = 0; y < height; y++)
+				for(let x = 0; x < width; x++) {
+					const b = srcBuffer[src]
+					src++
+					const g = srcBuffer[src]
+					src++
+					const r = srcBuffer[src]
+					src++
+					byteArray[dst] = r
+					dst++;
+					byteArray[dst] = g
+					dst++;
+					byteArray[dst] = b
+					dst++;
+				}
+			return byteArray
+		}
+
 		const header = DdsHeader.unpack(buffer)
 		if(header.magic != 0x20534444) throw 'Invalid DDS magic'
 
 		let blockBytes
 		let isRGBAUncompressed = false
+		let isRGBUncompressed = false
 
 		switch(header.ddspf.fourCC) {
 			case FOURCC_DXT1:
@@ -99,13 +124,22 @@ export class Dds {
 					isRGBAUncompressed = true
 					blockBytes = 64
 					this.format = 6408 // gl.RGBA
-				} else
+				} else if(header.ddspf.rgbBitCount === 24
+					&& header.ddspf.rBitMask & 0xff0000
+					&& header.ddspf.gBitMask & 0xff00
+					&& header.ddspf.bBitMask & 0xff
+					&& header.ddspf.aBitMask == 0
+				) {
+					isRGBUncompressed = true
+					blockBytes = 48
+					this.format = 6407 // gl.RGB
+				} else {
+					console.log(header)
 					throw 'Unsupported fourCC in DDS'
+				}
 		}
 
-		let mipmapCount = 1
-		if(header.flags & DDSD_MIPMAPCOUNT && loadMipmaps !== false)
-			mipmapCount = Math.max(1, header.mipmapCount)
+		const mipmapCount = loadMipmaps ? Math.max(1, header.mipmapCount) : 1
 
 		const caps2 = header.caps2
 		this.isCubemap = !!(caps2 & DDSCAPS2_CUBEMAP)
@@ -125,11 +159,16 @@ export class Dds {
 		let dataOffset = header.size + 4
 
 		const faces = this.isCubemap ? 6 : 1
+		if(this.isCubemap)
+			console.log('Cubemap!')
 		for(let face = 0; face < faces; face++)
 			for(let i = 0, width = this.width, height = this.height; i < mipmapCount; i++) {
 				let byteArray, dataLength
 				if(isRGBAUncompressed) {
 					byteArray = loadARGBMip(buffer, dataOffset, width, height)
+					dataLength = byteArray.length
+				} else if(isRGBUncompressed) {
+					byteArray = loadRGBMip(buffer, dataOffset, width, height)
 					dataLength = byteArray.length
 				} else {
 					dataLength = Math.max(4, width) / 4 * Math.max(4, height) / 4 * blockBytes

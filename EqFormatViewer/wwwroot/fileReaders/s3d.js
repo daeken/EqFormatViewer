@@ -50,7 +50,7 @@ export class S3D {
 		const cache = {}
 		directory.forEach((x, i) => {
 			const chunk = chunks[i]
-			Object.defineProperty(this, x.fn, {
+			Object.defineProperty(this, x.fn.toLowerCase(), {
 				enumerable: true, 
 				get: () => {
 					if(x.fn in cache) return cache[x.fn]

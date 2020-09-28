@@ -8,6 +8,7 @@ export class Engine {
 	keys = {}
 	
 	constructor(canvasId) {
+		this.culling = true
 		this.cvs = document.getElementById(canvasId)
 		window.addEventListener('resize', this.resize.bind(this));
 		setGl(this.cvs.getContext('webgl2'))
@@ -34,7 +35,8 @@ export class Engine {
 		document.addEventListener('keydown', e => {
 			if((e.target != document.body && e.target != this.cvs) || e.repeat) return
 			this.keys[e.code] = Date.now()
-			e.preventDefault()
+			if(e.code != 'MetaLeft' && !this.keys['MetaLeft'])
+				e.preventDefault()
 			return false
 		})
 		
@@ -56,14 +58,14 @@ export class Engine {
 	resize() {
 		this.cvs.width = window.innerWidth
 		this.cvs.height = window.innerHeight
-		this.projectionMat = Matrix44.createPerspectiveFieldOfView(45 * (Math.PI / 180), this.cvs.width / this.cvs.height, 1, 2000)
+		this.projectionMat = Matrix44.createPerspectiveFieldOfView(45 * (Math.PI / 180), this.cvs.width / this.cvs.height, 1, 5000)
 		this.draw()
 	}
 	
 	update() {
 		const now = Date.now()
 		
-		let forward = 0, right = 0
+		let forward = 0, right = 0, up = 0
 		for(const code of Object.keys(this.keys)) {
 			const span = (now - this.keys[code]) / 1000
 			this.keys[code] = now
@@ -80,11 +82,19 @@ export class Engine {
 				case 'KeyA':
 					right -= span
 					break
+				case 'KeyE':
+					up += span
+					break
+				case 'KeyQ':
+					up -= span
+					break
 			}
 		}
 		
-		if(forward != 0 || right != 0)
-			this.camera.move(new Vector3(right * 10, forward * 10, 0))
+		if(forward != 0 || right != 0 || up != 0) {
+			const speed = 'ShiftLeft' in this.keys ? 250 : 10
+			this.camera.move(new Vector3(right * speed, forward * speed, up * speed))
+		}
 		
 		this.camera.update()
 	}
@@ -93,10 +103,13 @@ export class Engine {
 		this.update()
 		
 		gl.viewport(0, 0, this.cvs.width, this.cvs.height)
-		gl.clearColor(1, 0, 0, 1)
+		gl.clearColor(0.6, 0.6, 0.6, 1)
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-		//gl.enable(gl.CULL_FACE)
-		//gl.cullFace(gl.BACK)
+		if(this.culling)
+			gl.enable(gl.CULL_FACE)
+		else
+			gl.disable(gl.CULL_FACE)
+		gl.cullFace(gl.BACK)
 		gl.enable(gl.DEPTH_TEST)
 		gl.disable(gl.SCISSOR_TEST)
 		

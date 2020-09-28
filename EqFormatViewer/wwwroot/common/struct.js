@@ -1,17 +1,27 @@
+import {Vector2, Vector3, Vector4} from '../common/vector.js'
+
 let instanceIter = 0
 const array = Symbol('array')
 const constant = Symbol('constant')
 const ref = Symbol('ref')
+const then = Symbol('then')
 const typeInstances = {}
 const makeType = type => typeInstances[instanceIter] = new Proxy(
 	{
+		isMagicalType: true, 
 		type: type, 
 		instance: instanceIter++,
 		toString: function() { return '#' + this.instance }, 
 		array: function(len) {
+			if(len === undefined)
+				throw 'Array length undefined; ensure you are using explicit types for fields referenced in array counts'
+			
 			if(typeof len == 'number' || Array.isArray(len) || {}.toString.call(len) === '[object Function]')
 				return makeType([array, this.type, len])
 			return this[len]
+		}, 
+		then: function(processor) {
+			return makeType([then, this, processor])
 		}
 	},
 	{
@@ -25,7 +35,8 @@ const makeType = type => typeInstances[instanceIter] = new Proxy(
 export const types = new Proxy({
 		uint8: 0, uint16: 0, uint32: 0, uint64: 0,
 		 int8: 0,  int16: 0,  int32: 0,  int64: 0,
-		float: 0, double: 0, string: 0
+		float: 0, double: 0, string: 0, 
+		vector2: 0, vector3: 0, vector4: 0
 	}, {
 		get: (target, prop) => {
 			if(prop in target) return makeType(prop)
@@ -42,9 +53,8 @@ class _Struct {
 
 		const instance = new this
 		for(const key of Object.getOwnPropertyNames(instance)) {
-			let value = instance[key]
-			if(value === undefined) value = this.__default
-			if(value.prototype instanceof _Struct)
+			const value = instance[key] ?? this.__default
+			if(value.prototype instanceof _Struct || typeof value == 'function')
 				this.props.push({name: key, type: value})
 			else {
 				this.props.push({name: key, type: value.type})
@@ -53,10 +63,11 @@ class _Struct {
 		}
 	}
 
-	static unpack(data, offset = 0) {
+	static unpack(data, offset = 0, parent = null) {
 		this.bake()
 		const dv = new DataView(ArrayBuffer.isView(data) ? data.buffer : data)
 		const obj = new this
+		obj.parent = parent
 		obj.__startOffset = offset
 		const littleEndian = true
 		const fetch = size => {
@@ -65,6 +76,7 @@ class _Struct {
 			return boff
 		}
 		const valueOf = type => {
+			if(type === undefined) return type
 			if(Array.isArray(type))
 				switch(type[0]) {
 					case array:
@@ -72,8 +84,8 @@ class _Struct {
 						if(type[1] == 'string') {
 							let ret = ''
 							for(let i = 0; i < count; ++i)
-								ret += String.fromCharCode(dv.getInt8(offset++)).split('\0', 1)[0]
-							return ret
+								ret += String.fromCharCode(dv.getInt8(offset++))
+							return ret.replace(/\0+$/, '')
 						}
 						const ret = []
 						for(let i = 0; i < count; ++i)
@@ -83,14 +95,24 @@ class _Struct {
 						return type[1]
 					case ref:
 						return obj[this.instanceMap[type[1]]]
+					case conditional:
+						return valueOf(type[2]) ? valueOf(type[1]) : valueOf(type[3])
+					case then:
+						return type[2](valueOf(type[1]), obj)
 					default:
 						throw `Unknown special type: ${JSON.stringify(type)}`
 				}
+			if(type?.isMagicalType)
+				return valueOf(type.type)
 			if(type.prototype instanceof _Struct) {
-				const value = type.unpack(data, offset)
+				const value = type.unpack(data, offset, obj)
 				offset = value.__endOffset
 				return value
 			}
+			if(typeof type == 'function')
+				return valueOf(type(obj))
+			if(typeof type != 'string')
+				return type
 			switch(type) {
 				case 'int8': return dv.getInt8(offset++)
 				case 'uint8': return dv.getUint8(offset++)
@@ -102,6 +124,21 @@ class _Struct {
 				case 'uint64': return dv.getBigUint64(fetch(8), littleEndian)
 				case 'float': return dv.getFloat32(fetch(4), littleEndian)
 				case 'double': return dv.getFloat64(fetch(8), littleEndian)
+				case 'vector2': return new Vector2(
+					dv.getFloat32(fetch(4), littleEndian),
+					dv.getFloat32(fetch(4), littleEndian)
+				)
+				case 'vector3': return new Vector3(
+					dv.getFloat32(fetch(4), littleEndian),
+					dv.getFloat32(fetch(4), littleEndian),
+					dv.getFloat32(fetch(4), littleEndian)
+				)
+				case 'vector4': return new Vector4(
+					dv.getFloat32(fetch(4), littleEndian),
+					dv.getFloat32(fetch(4), littleEndian),
+					dv.getFloat32(fetch(4), littleEndian),
+					dv.getFloat32(fetch(4), littleEndian)
+				)
 				case 'string':
 					let ret = ''
 					do {
@@ -116,6 +153,8 @@ class _Struct {
 		for(const prop of this.props)
 			obj[prop.name] = valueOf(prop.type)
 		obj.__endOffset = offset
+		if(!('parent' in this.props))
+			delete obj.parent
 		return obj
 	}
 	
@@ -194,3 +233,5 @@ export const Struct = new Proxy(_Struct, {
 		}
 	}
 })
+
+export const conditional = (type, predicate, defaultValue) => makeType([conditional, type, predicate, defaultValue])

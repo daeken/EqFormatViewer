@@ -17,7 +17,11 @@ export const mutableGlobal = () => {
 					nv[key] = nv[key].bind(nv)
 			backing = nv
 		}, new Proxy({}, {
-			get: (target, property) => backing[property]
+			get: (_, property) => backing[property],
+			set: (_, property, value) => {
+				backing[property] = value
+				return true
+			}
 		})
 	]
 }
