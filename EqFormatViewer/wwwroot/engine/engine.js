@@ -6,6 +6,10 @@ import {FpsCamera} from './fpsCamera.js'
 export class Engine {
 	models = []
 	keys = {}
+	frameTimes = []
+	lastFrameTime = 0
+	
+	get fps() { return this.frameTimes.length == 0 ? 0 : 1000 / (this.frameTimes.reduce((t, v) => t + v) / this.frameTimes.length) }
 	
 	constructor(canvasId) {
 		this.culling = true
@@ -18,16 +22,18 @@ export class Engine {
 		
 		let pointer = false
 		this.cvs.addEventListener('mousedown', e => {
+			if(e.button != 0) return
 			this.cvs.requestPointerLock()
 			pointer = true
 		})
 		
 		this.cvs.addEventListener('mousemove', e => {
-			if(!pointer || (e.movementX == 0 && e.movementY == 0)) return
+			if(e.button != 0 || !pointer || (e.movementX == 0 && e.movementY == 0)) return
 			this.camera.look(e.movementY * -0.005, e.movementX * -0.005)
 		})
 		
-		this.cvs.addEventListener('mouseup', () => {
+		this.cvs.addEventListener('mouseup',  e => {
+			if(e.button != 0) return
 			pointer = false
 			document.exitPointerLock()
 		})
@@ -99,7 +105,13 @@ export class Engine {
 		this.camera.update()
 	}
 	
-	draw() {
+	draw(ts = 0) {
+		if(this.lastFrameTime != 0) {
+			this.frameTimes.push(ts - this.lastFrameTime)
+			while(this.frameTimes.length > 200)
+				this.frameTimes.shift()
+		}
+		this.lastFrameTime = ts
 		this.update()
 		
 		gl.viewport(0, 0, this.cvs.width, this.cvs.height)
@@ -112,6 +124,7 @@ export class Engine {
 		gl.cullFace(gl.BACK)
 		gl.enable(gl.DEPTH_TEST)
 		gl.disable(gl.SCISSOR_TEST)
+		gl.enable(gl.BLEND)
 		
 		const projView = this.camera.viewMatrix.compose(this.projectionMat)
 		

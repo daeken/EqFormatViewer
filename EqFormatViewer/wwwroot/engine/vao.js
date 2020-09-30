@@ -20,7 +20,7 @@ export class Vao {
 	}
 	
 	attach(buffer, ...attributes) {
-		const instanced = attributes.length && (attributes[0] === false || attributes[1] === true) ? attributes.shift() : false
+		const instanced = attributes.length && (attributes[0] === false || attributes[0] === true) ? attributes.shift() : false
 		this.attachedBuffers.push(buffer)
 		
 		this.bind(() => {

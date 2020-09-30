@@ -5,6 +5,7 @@ const array = Symbol('array')
 const constant = Symbol('constant')
 const ref = Symbol('ref')
 const then = Symbol('then')
+const thenMap = Symbol('thenMap')
 const typeInstances = {}
 const makeType = type => typeInstances[instanceIter] = new Proxy(
 	{
@@ -19,10 +20,13 @@ const makeType = type => typeInstances[instanceIter] = new Proxy(
 			if(typeof len == 'number' || Array.isArray(len) || {}.toString.call(len) === '[object Function]')
 				return makeType([array, this.type, len])
 			return this[len]
-		}, 
+		},
 		then: function(processor) {
 			return makeType([then, this, processor])
-		}
+		},
+		thenMap: function(processor) {
+			return makeType([thenMap, this, processor])
+		},
 	},
 	{
 		get: (target, prop) => {
@@ -99,6 +103,8 @@ class _Struct {
 						return valueOf(type[2]) ? valueOf(type[1]) : valueOf(type[3])
 					case then:
 						return type[2](valueOf(type[1]), obj)
+					case thenMap:
+						return valueOf(type[1]).map(x => type[2](x, obj))
 					default:
 						throw `Unknown special type: ${JSON.stringify(type)}`
 				}

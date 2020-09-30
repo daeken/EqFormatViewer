@@ -3,6 +3,7 @@ import {Program} from './program.js'
 import {Vector3} from '../common/vector.js'
 
 export class Material {
+	instanced = false
 	wantNormals = false
 	fragmentShader
 	
@@ -31,11 +32,18 @@ precision highp float;
 layout (location = 0) in vec4 aPosition;
 layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aTexCoord;
-uniform mat4 uModelMat;
 uniform mat4 uProjectionViewMat;
 out vec2 vTexCoord;
 out vec4 vPosition;
 			`
+			if(this.instanced)
+				ret += `
+layout (location = 3) in mat4 uModelMat;
+				`
+			else
+				ret += `
+uniform mat4 uModelMat;
+				`
 			if(this.wantNormals)
 				ret += `
 out vec3 vNormal;

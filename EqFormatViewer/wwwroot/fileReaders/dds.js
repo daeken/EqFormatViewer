@@ -38,6 +38,9 @@ const FOURCC_ETC1 = 0x31435445
 
 export class Dds {
 	constructor(buffer, loadMipmaps = true) {
+		if(buffer.dds)
+			return buffer.dds
+		buffer.dds = this
 		function loadARGBMip(buffer, dataOffset, width, height) {
 			const dataLength = width * height * 4
 			const srcBuffer = new Uint8Array(buffer, dataOffset, dataLength)

@@ -1,11 +1,11 @@
 import {Struct, conditional, types} from '../common/struct.js'
-
-class ChunksStruct extends Struct {
-	count = types.uint32
-	chunks = class extends Struct[types.uint32] {
-		crc; offset; size
-	}.array(this.count)
-}
+import {Model} from '../engine/model.js'
+import {InstancedModel} from '../engine/instancedModel.js'
+import {Dds} from './dds.js'
+import {Texture} from '../engine/texture.js'
+import {ForwardDiffuseMaterial} from '../engine/materials/forwardDiffuse.js'
+import {Mesh} from '../engine/mesh.js'
+import {InstancedMesh} from '../engine/instancedMesh.js'
 
 const TerMagic = 0x54475145
 const ModMagic = 0x4d475145
@@ -71,7 +71,6 @@ export class TerMod {
 		const file = TerModStruct.unpack(data)
 		if(isTer && file.magic != TerMagic) throw 'Invalid magic for .ter file'
 		if(!isTer && file.magic != ModMagic) throw 'Invalid magic for .mod file'
-		
 		console.log(file)
 		
 		this.vertices = file.vertices
@@ -90,6 +89,58 @@ export class TerMod {
 				ib.push(t.a, t.b, t.c)
 				return ibs
 			}, {})
-		}))
+		})).filter(x => Object.keys(x.indicesByFlags).length > 0)
 	}
+}
+
+export const convertVertices = vertices => {
+	const vb = new Float32Array(vertices.length * 8)
+	let i = 0
+	for(const v of vertices) {
+		const pos = v.position
+		vb[i++] = pos.x
+		vb[i++] = pos.y
+		vb[i++] = pos.z
+
+		const normal = v.normal
+		vb[i++] = normal.x
+		vb[i++] = normal.y
+		vb[i++] = normal.z
+
+		const tc = v.texCoord
+		vb[i++] = tc.x
+		vb[i++] = tc.y
+	}
+	return vb
+}
+
+export const createModel = (archive, tm, vertexBuffer, chosenMaterial = null, chosenFlags = null, instanced = false) => {
+	const model = new (instanced ? InstancedModel : Model)()
+	
+	for(const mp of tm.materialPolys) {
+		const mat = mp.material, ibf = mp.indicesByFlags
+		if(chosenMaterial && mat.name != chosenMaterial) continue
+		const ib = new Uint32Array(Object.keys(ibf).reduce((total, flags) =>
+			!chosenFlags || flags == chosenFlags ? total + ibf[flags].length : total, 0))
+		let i = 0
+		for(const flags of Object.keys(ibf)) {
+			if(chosenFlags && flags != chosenFlags) continue
+			for(const v of ibf[flags])
+				ib[i++] = v
+		}
+
+		const texFile = mat.properties['e_TextureDiffuse0'][1]
+		let tex
+		if(texFile == 'None')
+			tex = Texture.white
+		else {
+			const dds = new Dds(archive.fetch(texFile))
+			tex = new Texture(dds.mipmaps, dds.format)
+		}
+		const material = new ForwardDiffuseMaterial([tex])
+
+		model.add(new (instanced ? InstancedMesh : Mesh)(material, vertexBuffer, ib))
+	}
+	
+	return model
 }

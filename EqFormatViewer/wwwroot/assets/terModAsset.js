@@ -6,34 +6,12 @@ import {Mesh} from '../engine/mesh.js'
 import {Model} from '../engine/model.js'
 import {engine} from '../common/globals.js'
 import {Texture} from '../engine/texture.js'
-import {TerMod} from '../fileReaders/terMod.js'
+import {TerMod, convertVertices, createModel} from '../fileReaders/terMod.js'
 
 class TerModSubAsset extends Asset {
 	constructor(archive, tm, vertexBuffer, chosenMaterial = null, chosenFlags = null) {
 		super()
-		this.model = new Model()
-		
-		for(const mp of tm.materialPolys) {
-			const mat = mp.material, ibf = mp.indicesByFlags
-			if(chosenMaterial && mat.name != chosenMaterial) continue
-			const ib = new Uint32Array(Object.keys(ibf).reduce((total, flags) => 
-				!chosenFlags || flags == chosenFlags ? total + ibf[flags].length : total, 0))
-			let i = 0
-			for(const flags of Object.keys(ibf)) {
-				if(chosenFlags && flags != chosenFlags) continue
-				for(const v of ibf[flags])
-					ib[i++] = v
-			}
-
-			const texFile = mat.properties['e_TextureDiffuse0'][1]
-			const dds = new Dds(archive.fetch(texFile))
-			const tex = new Texture(dds.mipmaps, dds.format)
-			const material = new ForwardDiffuseMaterial([tex])
-			
-			this.model.add(new Mesh(material, vertexBuffer, ib))
-		}
-		
-		engine.addModel(this.model)
+		engine.addModel(this.model = createModel(archive, tm, vertexBuffer, chosenMaterial, chosenFlags))
 	}
 	
 	unload() {
@@ -46,24 +24,8 @@ export class TerModAsset extends Asset {
 		super()
 		this.parent = parent
 		this.tm = new TerMod(parent.fetch, data, name.toLowerCase().endsWith('.ter'))
-		const vb = new Float32Array(this.tm.vertices.length * 8)
-		let i = 0
-		for(const v of this.tm.vertices) {
-			const pos = v.position
-			vb[i++] = pos.x
-			vb[i++] = pos.y
-			vb[i++] = pos.z
-
-			const normal = v.normal
-			vb[i++] = normal.x
-			vb[i++] = normal.y
-			vb[i++] = normal.z
-			
-			const tc = v.texCoord
-			vb[i++] = tc.x
-			vb[i++] = tc.y
-		}
-		this.vertexBuffer = new Buffer(vb)
+		console.log(this.tm)
+		this.vertexBuffer = new Buffer(convertVertices(this.tm.vertices))
 	}
 
 	get children() {

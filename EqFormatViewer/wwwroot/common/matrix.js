@@ -65,6 +65,10 @@ export class Matrix44 {
 			this._30 * right._03 + this._31 * right._13 + this._32 * right._23 + this._33 * right._33
 		)
 	}
+	
+	composeReverse(right) {
+		return right.compose(this)
+	}
 }
 
 Matrix44.identity = new Matrix44()
@@ -111,3 +115,19 @@ Matrix44.createFromAxisAngle = (axis, angle) => {
 		0, 0, 0, 1
 	)
 }
+
+Matrix44.createTranslate = pos =>
+	new Matrix44(
+		1, 0, 0, 0, 
+		0, 1, 0, 0, 
+		0, 0, 1, 0, 
+		pos.x, pos.y, pos.z, 1
+	)
+
+Matrix44.createScale = scale =>
+	new Matrix44(
+		scale.x, 0, 0, 0,
+		0, scale.y, 0, 0,
+		0, 0, scale.z, 0,
+		0, 0, 0, 1
+	)

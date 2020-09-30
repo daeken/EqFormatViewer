@@ -6,6 +6,7 @@ import {DirectoryAsset} from './assets/directoryAsset.js'
 import {ImageAsset} from './assets/imageAsset.js'
 import {S3DAsset} from './assets/s3dAsset.js'
 import {TerModAsset} from './assets/terModAsset.js'
+import {ZonAsset} from './assets/zonAsset.js'
 import {fetchAB, fetchJson, setEngine, engine, genericFunction, type} from './common/globals.js'
 import {Window} from './ui/window.js'
 
@@ -47,6 +48,7 @@ async function main() {
 	addLoader(['s3d', 'eqg'], (...args) => new S3DAsset(...args))
 	addLoader(['dds', 'bmp'], (...args) => new ImageAsset(...args))
 	addLoader(['ter', 'mod'], (...args) => new TerModAsset(...args))
+	addLoader(['zon'],        (...args) => new ZonAsset(...args))
 	
 	const dw = new Window('Debug')
 		.body(`
@@ -55,10 +57,11 @@ async function main() {
 			<br>
 			Backface cull: <input type="checkbox" checked>`)
 		.bind('input', 'change', (_, cb) => engine.culling = cb.checked)
+		.bind('.fps', () => engine.fps.toFixed(1))
 		.bind('.pos', () => `(
-			${engine.camera.position.x.toPrecision(2)}, 
-			${engine.camera.position.y.toPrecision(2)}, 
-			${engine.camera.position.z.toPrecision(2)})`)
+			${engine.camera.position.x.toFixed(2)}, 
+			${engine.camera.position.y.toFixed(2)}, 
+			${engine.camera.position.z.toFixed(2)})`)
 
 	const fp = new Window('File Picker')
 	const assetStack = []
