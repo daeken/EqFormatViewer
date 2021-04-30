@@ -6,7 +6,10 @@ const constant = Symbol('constant')
 const ref = Symbol('ref')
 const then = Symbol('then')
 const thenMap = Symbol('thenMap')
+const match = Symbol('match')
+const thenLazy = Symbol('thenLazy')
 const typeInstances = {}
+const lazyFunctions = []
 const makeType = type => typeInstances[instanceIter] = new Proxy(
 	{
 		isMagicalType: true, 
@@ -27,6 +30,23 @@ const makeType = type => typeInstances[instanceIter] = new Proxy(
 		thenMap: function(processor) {
 			return makeType([thenMap, this, processor])
 		},
+		thenLazy: function(processor) {
+			return makeType([thenLazy, this, processor])
+		},
+		case: function(predicate, type) {
+			if(Array.isArray(this.type) && this.type[0] == match) {
+				this.type.push([predicate, type])
+				return this
+			}
+			return makeType([match, this, [predicate, type]])
+		},
+		default: function(type) {
+			if(Array.isArray(this.type) && this.type[0] == match) {
+				this.type.push([() => true, type])
+				return this
+			}
+			throw 'Default on non-match type'
+		},
 	},
 	{
 		get: (target, prop) => {
@@ -36,6 +56,12 @@ const makeType = type => typeInstances[instanceIter] = new Proxy(
 			return target.array(prop[0] === '#' ? [ref, parseInt(prop.substring(1))] : [constant, parseInt(prop)])
 		}
 })
+
+export const align = alignment => makeType([align, alignment])
+export const currentPosition = () => makeType([currentPosition])
+export const assert = (predicate, message=null) => makeType([assert, predicate, message == null ? 'Failed assertion' : 'Failed assertion: ' + message])
+export const seekTo = pos => makeType([seekTo, pos])
+
 export const types = new Proxy({
 		uint8: 0, uint16: 0, uint32: 0, uint64: 0,
 		 int8: 0,  int16: 0,  int32: 0,  int64: 0,
@@ -73,6 +99,7 @@ class _Struct {
 		const obj = new this
 		obj.parent = parent
 		obj.__startOffset = offset
+		obj.__assigned = {}
 		const littleEndian = true
 		const fetch = size => {
 			const boff = offset
@@ -85,7 +112,7 @@ class _Struct {
 				switch(type[0]) {
 					case array:
 						const count = {}.toString.call(type[2]) === '[object Function]' ? type[2](obj) : valueOf(type[2])
-						if(type[1] == 'string') {
+						if(type[1] === 'string') {
 							let ret = ''
 							for(let i = 0; i < count; ++i)
 								ret += String.fromCharCode(dv.getInt8(offset++))
@@ -105,11 +132,39 @@ class _Struct {
 						return type[2](valueOf(type[1]), obj)
 					case thenMap:
 						return valueOf(type[1]).map(x => type[2](x, obj))
+					case thenLazy:
+						return type
+					case align:
+						const alignTo = valueOf(type[1])
+						while((offset % alignTo) != 0) offset++
+						return
+					case currentPosition:
+						return offset
+					case assert:
+						const pred = valueOf(type[1])
+						if(!pred) throw type[2]
+						return
+					case match:
+						const value = valueOf(type[1])
+						for(let i = 2; i < type.length; ++i) {
+							const [cond, into] = type[i]
+							const condValue = typeof cond == 'function'
+								? cond(value, obj)
+								: value == cond
+							if(condValue) return valueOf(into)
+						}
+						return
+					case seekTo:
+						offset = valueOf(type[1])
+						return
 					default:
 						throw `Unknown special type: ${JSON.stringify(type)}`
 				}
-			if(type?.isMagicalType)
+			if(type?.isMagicalType) {
+				if(type?.instance in this.instanceMap && obj.__assigned[this.instanceMap[type.instance]])
+					return obj[this.instanceMap[type.instance]]
 				return valueOf(type.type)
+			}
 			if(type.prototype instanceof _Struct) {
 				const value = type.unpack(data, offset, obj)
 				offset = value.__endOffset
@@ -156,11 +211,38 @@ class _Struct {
 				default: throw `Can't read type: ${JSON.stringify(type)}`
 			}
 		}
-		for(const prop of this.props)
-			obj[prop.name] = valueOf(prop.type)
+		for(const prop of this.props) {
+			const value = valueOf(prop.type)
+			if(Array.isArray(value) && value[0] == thenLazy) {
+				const oval = valueOf(value[1])
+				lazyFunctions.push(() => obj[prop.name] = value[2](oval, obj))
+			} else {
+				obj[prop.name] = value
+				obj.__assigned[prop.name] = true
+			}
+		}
 		obj.__endOffset = offset
-		if(!('parent' in this.props))
-			delete obj.parent
+		lazyFunctions.push(() => {
+			if(!('parent' in this.props))
+				delete obj.parent
+			for(const prop of this.props) {
+				if(prop.name[0] == '$') {
+					const value = obj[prop.name]
+					for(const key of Object.getOwnPropertyNames(value))
+						if(!key.startsWith('__') && key[0] != '$' && key != 'parent')
+							obj[key] = value[key]
+					delete obj[prop.name]
+				}
+				if(prop.name.startsWith('__'))
+					delete obj[prop.name]
+			}
+			delete obj.__assigned
+		})
+		
+		if(!parent)
+			while(lazyFunctions.length)
+				lazyFunctions.shift()()
+		
 		return obj
 	}
 	

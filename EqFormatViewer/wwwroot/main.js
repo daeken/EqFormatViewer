@@ -6,6 +6,7 @@ import {DirectoryAsset} from './assets/directoryAsset.js'
 import {ImageAsset} from './assets/imageAsset.js'
 import {S3DAsset} from './assets/s3dAsset.js'
 import {TerModAsset} from './assets/terModAsset.js'
+import {WldAsset} from './assets/wldAsset.js'
 import {ZonAsset} from './assets/zonAsset.js'
 import {fetchAB, fetchJson, setEngine, engine, genericFunction, type} from './common/globals.js'
 import {Window} from './ui/window.js'
@@ -48,6 +49,7 @@ async function main() {
 	addLoader(['s3d', 'eqg'], (...args) => new S3DAsset(...args))
 	addLoader(['dds', 'bmp'], (...args) => new ImageAsset(...args))
 	addLoader(['ter', 'mod'], (...args) => new TerModAsset(...args))
+	addLoader(['wld'],        (...args) => new WldAsset(...args))
 	addLoader(['zon'],        (...args) => new ZonAsset(...args))
 	
 	const dw = new Window('Debug')
